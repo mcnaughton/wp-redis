@@ -717,20 +717,9 @@ class WP_Object_Cache {
 			'port' => $port
 		);
 		if ( ! empty( $redis_server['auth'] ) ) {
-			try {
-				$this->redis->auth( $redis_server['auth'] );
-			// predis throws an Exception when it fails a server call.
-			// To prevent WordPress from fataling, we catch the Exception.
-			} catch ( Exception $e ) {
-				try {
-					$this->last_triggered_error = 'WP Redis: ' . $e->getMessage();
-					// Be friendly to developers debugging production servers by triggering an error
-					trigger_error( $this->last_triggered_error, E_USER_WARNING );
-				} catch( PHPUnit_Framework_Error_Warning $e ) {
-					// PHPUnit throws an Exception when `trigger_error()` is called.
-					// To ensure our tests (which expect Exceptions to be caught) continue to run,
-					// we catch the PHPUnit exception and inspect the RedisException message
-				}
+			$authed = $this->redis->auth( $redis_server['auth'] );
+			if ( ! $authed ) {
+				$this->missing_redis_message = 'Warning! WP Redis object cache failed authentication to Redis server.';
 			}
 		}
 		$this->is_redis_connected = $this->redis->isConnected();
